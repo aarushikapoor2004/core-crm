@@ -6,3 +6,48 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+  name  String
+
+  customers Customer[]
+
+  @@map("users")
+}
+
+model Customer {
+  id    String @id @default(cuid())
+  email String @unique
+  name  String
+
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@index([email])
+  @@map("customers")
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  status    OrderStatus @default(PENDING)
+  amount    Decimal     @db.Decimal(10, 2)
+  orderDate DateTime    @default(now())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([status])
+  @@index([orderDate])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  CONFIRMED
+  PENDING
+  REFUNDED
+}
