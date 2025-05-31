@@ -1,7 +1,7 @@
 export default function Home() {
   return (
     <>
-      hi i am home page varun dev bahrdwaj
+      <h1> home page</h1>
     </>
   );
 }
