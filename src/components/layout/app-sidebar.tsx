@@ -17,7 +17,7 @@ import { sidebarNavigationSection } from "@/constants";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props} variant="floating">
+    <Sidebar collapsible="icon" {...props} variant="inset">
       < SidebarRail />
       <SidebarHeader>
         <SidebarHead />

@@ -1,4 +1,4 @@
-import { ThemeToggleButton } from "./theme-toggle-button"
+import { ThemeToggleButton } from "../theme-toggle-button"
 import { BreadcrumbHeader } from "./bread-crum-header"
 import { SearchCommand } from "./search-command"
 import { Separator } from "@/components/ui/separator"
