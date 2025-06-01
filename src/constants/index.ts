@@ -21,7 +21,7 @@ export interface SubItemType {
   url: string;
 }
 
-export const PROTECTED_ROUTES: string[] = ["/home"];
+export const PROTECTED_ROUTES: string[] = ["/dashboard"];
 
 export const sidebarNavigationSection: SectionType[] = [
   {
@@ -31,7 +31,7 @@ export const sidebarNavigationSection: SectionType[] = [
         itemName: "dashboard",
         isCollapsible: false,
         icon: LayoutDashboard,
-        url: "/",
+        url: "/dashboard",
       },
     ],
   },

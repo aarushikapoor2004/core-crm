@@ -95,7 +95,7 @@ export function LoginForm({ asModal }: { asModal?: boolean }) {
               </div>
               <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
                 <span className=" rounded-full px-3 py-1  relative z-10 bg-background  text-muted-foreground">
-                  edge-x
+                  core-crm
                 </span>
               </div>
             </div>
