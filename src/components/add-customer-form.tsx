@@ -1,17 +1,28 @@
-'use client';
-
-import { useTransition } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { customerFormSchema, defaultValues } from '@/schema/customer';
-import { z } from 'zod';
-import { Trash } from 'lucide-react';
-import { toast } from 'sonner';
+"use client";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useTransition } from "react";
+import { useSession } from "next-auth/react";
+import axios from 'axios';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { z } from "zod";
+import { customerFormSchema, defaultValues } from "@/schema/customer";
+import { Trash } from "lucide-react";
+import { toast } from "sonner";
+import type { ApiResponse } from "@/types";
 
 export function CustomerForm() {
+  const { data: session, status } = useSession();
+
   const form = useForm<z.infer<typeof customerFormSchema>>({
     resolver: zodResolver(customerFormSchema),
     defaultValues,
@@ -26,20 +37,75 @@ export function CustomerForm() {
 
   const onSubmit = (values: z.infer<typeof customerFormSchema>) => {
     startTransition(async () => {
-      // const result = await createCustomerAction(values);
-      // toast(JSON.stringify(result.message));
-      toast("done done")
-    })
+      // Check if session is loading
+      if (status === "loading") {
+        toast.error("Please wait, checking authentication...");
+        return;
+      }
+
+      // Check if user is authenticated
+      if (!session?.user?.id) {
+        toast.error("Unauthenticated request. Please log in to continue.");
+        return;
+      }
+
+      try {
+        // Add userId to the request payload
+        const payload = {
+          ...values,
+          userId: session.user.id
+        };
+
+        const res = await axios.post<ApiResponse>(
+          "http://localhost:3000/api/customers",
+          payload
+        );
+
+        const result = res.data;
+        if (result.success) {
+          toast.success(result.message);
+          // form.reset();
+        } else {
+          toast.error(result.message);
+        }
+      } catch (error) {
+        console.error("Frontend error while submitting form:", error);
+        toast.error("Something went wrong while submitting the form.");
+      }
+    });
   };
 
+  // Show loading state while session is being fetched
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
+
+  // Show authentication required message if not logged in
+  if (!session) {
+    return (
+      <div className="mx-auto max-w-3xl py-4">
+        <div className="text-center p-8 rounded-lg border border-red-200 bg-red-50">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Authentication Required</h2>
+          <p className="text-red-600">Please log in to access the customer form.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Form  {...form} >
-      <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto space-y-8 max-w-3xl py-4 rounded-lg">
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="mx-auto space-y-8 max-w-3xl py-4 rounded-lg"
+      >
         <div className="space-y-6">
           <h2 className="text-2xl font-bold">Create Customers</h2>
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex flex-wrap items-end gap-4 p-4 rounded-lg border">
+              <div
+                key={field.id}
+                className="flex flex-wrap items-end gap-4 p-4 rounded-lg border"
+              >
                 <FormField
                   control={form.control}
                   name={`entries.${index}.name`}
@@ -101,7 +167,9 @@ export function CustomerForm() {
                           type="number"
                           placeholder="Age"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -125,9 +193,9 @@ export function CustomerForm() {
               variant="outline"
               onClick={() =>
                 append({
-                  name: '',
-                  email: '',
-                  phoneNumber: '',
+                  name: "",
+                  email: "",
+                  phoneNumber: "",
                   age: 0,
                 })
               }
@@ -140,7 +208,7 @@ export function CustomerForm() {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? 'Submitting...' : 'Submit'}
+            {isPending ? "Submitting..." : "Submit"}
           </Button>
         </div>
       </form>

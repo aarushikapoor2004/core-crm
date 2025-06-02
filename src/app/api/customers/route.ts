@@ -1,28 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { customerFormSchema, customerSchema } from "@/schema/customer";
-import { auth } from "@/lib/auth";
 import type { ApiResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
+    console.clear();
     const body = await request.json();
-    const session = await auth();
-    const userId = session?.user.id;
+    console.log("Received request body:", body);
+
+    // Check if userId is provided from frontend
+    const { userId, entries } = body;
 
     if (!userId) {
+      console.error("Authentication error: No userId provided in request");
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           message: "Unauthorized: User not authenticated",
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
-    const validationResult = customerFormSchema.safeParse(body);
+    console.log("Processing request for userId:", userId);
 
+    // Validate the form data structure
+    const validationResult = customerFormSchema.safeParse({ entries });
     if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -32,26 +38,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { entries } = validationResult.data;
+    console.log(`Starting to process ${entries.length} customer entries`);
+
     let uploadedCount = 0;
     let failedCount = 0;
+    const failedEntries: Array<{ index: number; error: string }> = [];
 
-    for (const entry of entries) {
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
       try {
+        console.log(`Processing entry ${i + 1}:`, entry);
+
+        // Validate individual entry
         const validEntry = customerSchema.parse(entry);
-        await db.customer.create({
+        console.log(`Entry ${i + 1} validation passed`);
+
+        // Create customer in database
+        const createdCustomer = await db.customer.create({
           data: {
             name: validEntry.name,
             email: validEntry.email,
             phoneNumber: validEntry.phoneNumber,
-            age: validEntry.age,
+            age: validEntry.age as number,
             userId: userId,
           },
         });
+
+        console.log(`Entry ${i + 1} successfully created with ID:`, createdCustomer.id);
         uploadedCount++;
+
       } catch (error) {
+        console.error(`Failed to process entry ${i + 1}:`, error);
+
+        let errorMessage = "Unknown error";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
+        failedEntries.push({
+          index: i + 1,
+          error: errorMessage
+        });
+
         failedCount++;
       }
+    }
+
+    // Log summary
+    console.log(`Processing completed: ${uploadedCount} successful, ${failedCount} failed`);
+    if (failedEntries.length > 0) {
+      console.log("Failed entries details:", failedEntries);
     }
 
     let message = `Processing completed: ${uploadedCount} customers uploaded successfully.`;
@@ -65,21 +101,29 @@ export async function POST(request: NextRequest) {
         message,
         data: {
           uploaded: uploadedCount,
-          failed: failedCount,
-        },
+          failed: failedCount
+        }
       },
       { status: 200 }
     );
+
   } catch (error) {
     console.error("Customer API Error:", error);
+
+    let errorMessage = "Internal server error occurred while processing customers.";
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      errorMessage = error.message;
+    }
 
     return NextResponse.json<ApiResponse>(
       {
         success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Internal server error occurred while processing customers.",
+        message: errorMessage,
       },
       { status: 500 }
     );
@@ -87,6 +131,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  console.log("GET request received - Method not allowed");
   return NextResponse.json<ApiResponse>(
     {
       success: false,
@@ -97,6 +142,7 @@ export async function GET() {
 }
 
 export async function PUT() {
+  console.log("PUT request received - Method not allowed");
   return NextResponse.json<ApiResponse>(
     {
       success: false,
@@ -107,6 +153,7 @@ export async function PUT() {
 }
 
 export async function DELETE() {
+  console.log("DELETE request received - Method not allowed");
   return NextResponse.json<ApiResponse>(
     {
       success: false,
@@ -115,4 +162,3 @@ export async function DELETE() {
     { status: 405 }
   );
 }
-
