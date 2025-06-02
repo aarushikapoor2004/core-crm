@@ -1,51 +1,15 @@
 "use client";
-import React, { useState, useTransition } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SidebarHeader } from "./ui/sidebar";
-import { ChevronsRight, LoaderCircle, PlusCircle, XIcon, CirclePlus, CornerDownRight } from "lucide-react";
+import { ChevronsRight, PlusCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger, } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from 'sonner';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { CustomerForm } from "./add-customer-schema";
 
 
 export function AddDataButton() {
   const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition()
-
-
-  // const form = useForm<InputTypeCreateCourse>({
-  //   resolver: zodResolver(CourseCreateSchema),
-  //   defaultValues: {
-  //     title: "",
-  //     description: "",
-  //     bannerImage: "",
-  //     openToEveryone: false,
-  //     price: 0,
-  //   },
-  // });
-
-
-
   return (
     <Sheet open={open} onOpenChange={setOpen} >
       <SheetTrigger asChild>
@@ -75,12 +39,7 @@ export function AddDataButton() {
               <ChevronsRight className="size-6" />
             </Button>
           </SidebarHeader>
-
-
-
-          <Button className="absolute bottom-3 flex gap-2 items-center justify-center ml-4" type="submit" disabled={isPending}>
-            {isPending ? <LoaderCircle /> : <> submit <CornerDownRight /> </>}
-          </Button>
+          <CustomerForm />
         </ScrollArea>
       </SheetContent >
     </Sheet >
