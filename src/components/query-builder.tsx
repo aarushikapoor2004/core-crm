@@ -1,18 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trash2, Plus } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
+// Define the types for our component
 interface Field {
   name: string
   label: string
   type: "text" | "number" | "date" | "select"
-  options?: string[]
+  options?: string[] // For select fields
 }
 
 interface QueryCondition {
@@ -22,12 +24,22 @@ interface QueryCondition {
   value: string | number
 }
 
-interface QueryBuilderProps {
-  fields: Field[]
-  defaultQuery?: QueryCondition[]
-  onQueryChange: (query: QueryCondition[]) => void
+interface QueryGroup {
+  id: string
+  logic: "AND" | "OR"
+  conditions: QueryCondition[]
 }
 
+interface QueryBuilderProps {
+  fields: Field[]
+  defaultQuery?: {
+    logic: "AND" | "OR"
+    conditions: QueryCondition[]
+  }
+  onQueryChange: (query: { logic: "AND" | "OR"; conditions: QueryCondition[] }) => void
+}
+
+// Define operators based on field types
 const getOperatorsForType = (type: string) => {
   switch (type) {
     case "text":
@@ -64,14 +76,18 @@ const getOperatorsForType = (type: string) => {
   }
 }
 
-export default function QueryBuilder({ fields, defaultQuery = [], onQueryChange }: QueryBuilderProps) {
-  // State to manage all query conditions
-  const [conditions, setConditions] = useState<QueryCondition[]>(defaultQuery)
+export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: QueryBuilderProps) {
+  // State to manage all query conditions and logic
+  const [logic, setLogic] = useState<"AND" | "OR">(defaultQuery?.logic || "AND")
+  const [conditions, setConditions] = useState<QueryCondition[]>(defaultQuery?.conditions || [])
 
-  // Effect to call onQueryChange whenever conditions change
+  // Memoize the query object to prevent unnecessary re-renders
+  const currentQuery = useCallback(() => ({ logic, conditions }), [logic, conditions])
+
+  // Effect to call onQueryChange whenever conditions or logic change
   useEffect(() => {
-    onQueryChange(conditions)
-  }, [conditions, onQueryChange])
+    onQueryChange(currentQuery())
+  }, [currentQuery, onQueryChange])
 
   // Function to add a new condition
   const addCondition = () => {
@@ -160,76 +176,110 @@ export default function QueryBuilder({ fields, defaultQuery = [], onQueryChange 
         <CardTitle>Query Builder</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Logic Selector */}
+        <div className="bg-muted p-4 rounded-lg">
+          <Label className="mb-2 block">Match conditions when:</Label>
+          <RadioGroup
+            value={logic}
+            onValueChange={(value) => setLogic(value as "AND" | "OR")}
+            className="flex space-x-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="AND" id="and" />
+              <Label htmlFor="and" className="font-medium">
+                ALL conditions are met (AND)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="OR" id="or" />
+              <Label htmlFor="or" className="font-medium">
+                ANY condition is met (OR)
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
         {/* Render each condition */}
-        {conditions.map((condition) => {
+        {conditions.map((condition, index) => {
           const field = getFieldByName(condition.field)
           const operators = field ? getOperatorsForType(field.type) : []
 
           return (
-            <div key={condition.id} className="flex items-end gap-4 p-4 border rounded-lg">
-              {/* Field Selection */}
-              <div className="flex-1">
-                <Label htmlFor={`field-${condition.id}`}>Field</Label>
-                <Select
-                  value={condition.field}
-                  onValueChange={(value) => {
-                    // Reset operator and value when field changes
-                    const newField = getFieldByName(value)
-                    const defaultOperator = newField ? getOperatorsForType(newField.type)[0].value : "equals"
-                    updateCondition(condition.id, {
-                      field: value,
-                      operator: defaultOperator,
-                      value: "",
-                    })
-                  }}
+            <div key={condition.id} className="space-y-4">
+              {/* Logic connector between conditions */}
+              {index > 0 && (
+                <div className="flex items-center justify-center">
+                  <div className="bg-muted px-4 py-1 rounded-full text-sm font-medium">{logic}</div>
+                </div>
+              )}
+
+              <div className="flex items-end gap-4 p-4 border rounded-lg">
+                {/* Field Selection */}
+                <div className="flex-1">
+                  <Label htmlFor={`field-${condition.id}`}>Field</Label>
+                  <Select
+                    value={condition.field}
+                    onValueChange={(value) => {
+                      // Reset operator and value when field changes
+                      const newField = getFieldByName(value)
+                      const defaultOperator = newField ? getOperatorsForType(newField.type)[0].value : "equals"
+                      updateCondition(condition.id, {
+                        field: value,
+                        operator: defaultOperator,
+                        value: "",
+                      })
+                    }}
+                  >
+                    <SelectTrigger id={`field-${condition.id}`}>
+                      <SelectValue placeholder="Select field" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fields.map((field) => (
+                        <SelectItem key={field.name} value={field.name}>
+                          {field.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Operator Selection */}
+                <div className="flex-1">
+                  <Label htmlFor={`operator-${condition.id}`}>Operator</Label>
+                  <Select
+                    value={condition.operator}
+                    onValueChange={(value) => updateCondition(condition.id, { operator: value })}
+                  >
+                    <SelectTrigger id={`operator-${condition.id}`}>
+                      <SelectValue placeholder="Select operator" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {operators.map((operator) => (
+                        <SelectItem key={operator.value} value={operator.value}>
+                          {operator.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Value Input */}
+                <div className="flex-1">
+                  <Label htmlFor={`value-${condition.id}`}>Value</Label>
+                  {renderValueInput(condition)}
+                </div>
+
+                {/* Remove Button */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => removeCondition(condition.id)}
+                  className="text-red-500 hover:text-red-700"
+                  disabled={conditions.length <= 1}
                 >
-                  <SelectTrigger id={`field-${condition.id}`}>
-                    <SelectValue placeholder="Select field" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fields.map((field) => (
-                      <SelectItem key={field.name} value={field.name}>
-                        {field.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-
-              <div className="flex-1">
-                <Label htmlFor={`operator-${condition.id}`}>Operator</Label>
-                <Select
-                  value={condition.operator}
-                  onValueChange={(value) => updateCondition(condition.id, { operator: value })}
-                >
-                  <SelectTrigger id={`operator-${condition.id}`}>
-                    <SelectValue placeholder="Select operator" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {operators.map((operator) => (
-                      <SelectItem key={operator.value} value={operator.value}>
-                        {operator.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Value Input */}
-              <div className="flex-1">
-                <Label htmlFor={`value-${condition.id}`}>Value</Label>
-                {renderValueInput(condition)}
-              </div>
-
-              {/* Remove Button */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => removeCondition(condition.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
           )
         })}
@@ -244,11 +294,10 @@ export default function QueryBuilder({ fields, defaultQuery = [], onQueryChange 
         {conditions.length > 0 && (
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <Label className="text-sm font-medium">Current Query (JSON):</Label>
-            <pre className="mt-2 text-sm overflow-x-auto">{JSON.stringify(conditions, null, 2)}</pre>
+            <pre className="mt-2 text-sm overflow-x-auto">{JSON.stringify({ logic, conditions }, null, 2)}</pre>
           </div>
         )}
       </CardContent>
     </Card>
   )
 }
-
