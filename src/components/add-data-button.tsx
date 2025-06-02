@@ -7,6 +7,7 @@ import { ChevronsRight, PlusCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger, } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomerForm } from "./add-customer-form";
+import { OrdersForm } from "./add-orders-form";
 import {
   Tabs,
   TabsContent,
@@ -38,7 +39,6 @@ export function AddDataButton() {
             <SheetTitle className="font-bold text-xl">Add Data </SheetTitle>
             <Button
               onClick={() => {
-                // form.reset()
                 setOpen(false)
               }}
               className="ring-offset-background focus:ring-ring  absolute top-4 right-6 rounded-xs   focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none size-7   bg-transparent"
@@ -54,6 +54,9 @@ export function AddDataButton() {
             </TabsList>
             <TabsContent value="customers">
               <CustomerForm />
+            </TabsContent>
+            <TabsContent value="orders">
+              <OrdersForm />
             </TabsContent>
           </Tabs>
         </ScrollArea>

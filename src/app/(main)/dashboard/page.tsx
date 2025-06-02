@@ -2,6 +2,7 @@
 import { AddDataButton } from "@/components/add-data-button";
 import { TrendingUpIcon, User } from "lucide-react"
 import { db } from "@/db"
+import { redirect } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -12,8 +13,21 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { OverviewTable } from "@/components/overview-table";
+import { auth } from "@/lib/auth";
 
 export default async function MainHomePage() {
+  const session = await auth();
+
+  if (session == null) {
+    redirect('/login');
+  }
+
+  const userId = session.user.id;
+  if (!userId) {
+    redirect('/');
+  }
+
+
   const data = await db.customer.findMany({
     select: {
       id: true,
@@ -25,6 +39,9 @@ export default async function MainHomePage() {
           orders: true
         }
       }
+    },
+    where: {
+      userId: userId
     }
   })
   return (
