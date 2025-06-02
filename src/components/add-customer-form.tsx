@@ -207,7 +207,7 @@ export function CustomerForm() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" className="" disabled={isPending}>
             {isPending ? "Submitting..." : "Submit"}
           </Button>
         </div>
