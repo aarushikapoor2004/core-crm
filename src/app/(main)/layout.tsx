@@ -9,7 +9,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <AppSidebar />
       <SidebarInset>
         <NavBar />
-        <div className="ml-3.5">
+        <div className="mx-4">
           {children}
         </div>
       </SidebarInset>

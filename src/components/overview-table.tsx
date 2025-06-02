@@ -29,11 +29,11 @@ export const columns: ColumnDef<getCoustomerSchema>[] = [
 ];
 
 
-export function OverviewTable({ classes = [] }: { classes: getCoustomerSchema[] }) {
+export function OverviewTable({ data = [] }: { data: getCoustomerSchema[] }) {
 
   return (
     <div className="" >
-      <DataTable columns={columns} data={classes} />
+      <DataTable columns={columns} data={data} />
     </ div >
 
   );

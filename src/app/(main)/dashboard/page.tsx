@@ -1,7 +1,7 @@
-"use client";
 
 import { AddDataButton } from "@/components/add-data-button";
-import { TrendingDownIcon, TrendingUpIcon, User } from "lucide-react"
+import { TrendingUpIcon, User } from "lucide-react"
+import { db } from "@/db"
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -11,24 +11,36 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { OverviewTable } from "@/components/overview-table";
 
-export default function MainHomePage() {
+export default async function MainHomePage() {
+  const data = await db.customer.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phoneNumber: true,
+      _count: {
+        select: {
+          orders: true
+        }
+      }
+    }
+  })
   return (
-    <div>
-      <div className="flex gap-2">
-        <div className="w-full">
-          <div className="flex justify-between pr-4 pt-1">
-            <div>
-              <h2 className="text-2xl font-bold">overview</h2>
-            </div>
-            <div className="flex gap-2 ">
-              <AddDataButton />
-            </div>
+    <div className="space-y-3">
+      <div className="w-full">
+        <div className="flex justify-between  pt-2">
+          <div>
+            <h2 className="text-2xl font-bold">overview</h2>
+          </div>
+          <div className="flex gap-2 ">
+            <AddDataButton />
           </div>
         </div>
       </div>
 
-      <div className="flex flex-row gap-4  pr-3 mt-2   overflow-x-auto *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
+      <div className="flex flex-row gap-4   overflow-x-auto *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
         <Card className="@container/card w-full">
           <CardHeader className="relative">
             <CardDescription className="flex gap-2 items-center"> <User /> Total Coustomers  </CardDescription>
@@ -75,7 +87,8 @@ export default function MainHomePage() {
           </CardFooter>
         </Card>
       </div>
-      table
+      <OverviewTable data={data} />
+
 
 
     </div>

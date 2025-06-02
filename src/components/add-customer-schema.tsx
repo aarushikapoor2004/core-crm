@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useTransition } from 'react';
@@ -7,14 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { customerFormSchema, defaultValues } from '@/schema/customer';
 import { z } from 'zod';
-import { Check, ChevronsUpDown, Trash } from 'lucide-react';
+import { Trash } from 'lucide-react';
 import { toast } from 'sonner';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
 
 export function CustomerForm() {
   const form = useForm<z.infer<typeof customerFormSchema>>({
@@ -38,8 +33,8 @@ export function CustomerForm() {
   };
 
   return (
-    <Form {...form} >
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-3xl py-4 rounded-lg">
+    <Form  {...form} >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto space-y-8 max-w-3xl py-4 rounded-lg">
         <div className="space-y-6">
           <h2 className="text-2xl font-bold">Create Customers</h2>
           <div className="space-y-4">
