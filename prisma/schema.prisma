@@ -23,7 +23,7 @@ model Customer {
   email       String @unique
   name        String
   phoneNumber String @unique
-  age Int 
+  age         Int
 
   userId String
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)

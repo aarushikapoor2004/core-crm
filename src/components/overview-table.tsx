@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { getCoustomerSchema } from "@/db/coustomers";
+import { getCoustomerSchema } from "@/schema/customer";
 import { DataTable } from "@/components/data-table";
 
 export const columns: ColumnDef<getCoustomerSchema>[] = [

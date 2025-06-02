@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 export const customerSchema = z.object({
@@ -15,4 +16,20 @@ export const customerFormSchema = z.object({
 export const defaultValues: z.infer<typeof customerFormSchema> = {
   entries: []
 };
+
+
+
+export type getCoustomerSchema = Prisma.CustomerGetPayload<{
+  select: {
+    id: true;
+    name: true;
+    email: true;
+    phoneNumber: true;
+    _count: {
+      select: {
+        orders: true;
+      };
+    };
+  };
+}>;
 
