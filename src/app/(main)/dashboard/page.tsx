@@ -30,7 +30,7 @@ export default async function MainHomePage() {
   return (
     <div className="space-y-3">
       <div className="w-full">
-        <div className="flex justify-between  pt-2">
+        <div className="flex justify-between pt-2">
           <div>
             <h2 className="text-2xl font-bold">overview</h2>
           </div>

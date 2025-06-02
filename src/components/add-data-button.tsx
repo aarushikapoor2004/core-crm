@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SidebarHeader } from "./ui/sidebar";
@@ -6,6 +7,13 @@ import { ChevronsRight, PlusCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger, } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomerForm } from "./add-customer-schema";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+
 
 
 export function AddDataButton() {
@@ -39,7 +47,15 @@ export function AddDataButton() {
               <ChevronsRight className="size-6" />
             </Button>
           </SidebarHeader>
-          <CustomerForm />
+          <Tabs defaultValue="customers">
+            <TabsList className="px-2  gap-2 mx-auto mt-2 ">
+              <TabsTrigger value="customers"> Add Customers </TabsTrigger>
+              <TabsTrigger value="orders"> Add Ordders</TabsTrigger>
+            </TabsList>
+            <TabsContent value="customers">
+              <CustomerForm />
+            </TabsContent>
+          </Tabs>
         </ScrollArea>
       </SheetContent >
     </Sheet >
