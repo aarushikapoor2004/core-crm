@@ -1,5 +1,6 @@
 import {
   type LucideIcon,
+  GitGraph,
   LayoutDashboard,
 } from "lucide-react";
 
@@ -28,10 +29,16 @@ export const sidebarNavigationSection: SectionType[] = [
     sectionName: "main",
     items: [
       {
-        itemName: "dashboard",
+        itemName: "overview",
         isCollapsible: false,
         icon: LayoutDashboard,
-        url: "/dashboard",
+        url: "/overview",
+      },
+      {
+        itemName: "segment",
+        isCollapsible: false,
+        icon: GitGraph,
+        url: "/segment",
       },
     ],
   },
