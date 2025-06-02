@@ -14,6 +14,7 @@ model User {
   image String?
 
   customers Customer[]
+  Segment   Segment[]
 
   @@map("users")
 }
@@ -53,4 +54,16 @@ enum OrderStatus {
   CONFIRMED
   PENDING
   REFUNDED
+}
+
+model Segment {
+  id    String @id @default(cuid())
+  name  String
+  rules Json
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([id])
+  @@map("segments")
 }
