@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, Plus } from "lucide-react"
+import { Trash2, Plus, FolderPlus } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 // Define the types for our component
@@ -26,17 +26,15 @@ interface QueryCondition {
 
 interface QueryGroup {
   id: string
+  type: "group"
   logic: "AND" | "OR"
-  conditions: QueryCondition[]
+  children: (QueryCondition | QueryGroup)[]
 }
 
 interface QueryBuilderProps {
   fields: Field[]
-  defaultQuery?: {
-    logic: "AND" | "OR"
-    conditions: QueryCondition[]
-  }
-  onQueryChange: (query: { logic: "AND" | "OR"; conditions: QueryCondition[] }) => void
+  defaultQuery?: QueryGroup
+  onQueryChange: (query: QueryGroup) => void
 }
 
 // Define operators based on field types
@@ -77,37 +75,115 @@ const getOperatorsForType = (type: string) => {
 }
 
 export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: QueryBuilderProps) {
-  // State to manage all query conditions and logic
-  const [logic, setLogic] = useState<"AND" | "OR">(defaultQuery?.logic || "AND")
-  const [conditions, setConditions] = useState<QueryCondition[]>(defaultQuery?.conditions || [])
+  // Default query structure
+  const createDefaultQuery = (): QueryGroup => ({
+    id: "root",
+    type: "group",
+    logic: "AND",
+    children: [],
+  })
+
+  // State to manage the root query group
+  const [rootQuery, setRootQuery] = useState<QueryGroup>(defaultQuery || createDefaultQuery())
 
   // Memoize the query object to prevent unnecessary re-renders
-  const currentQuery = useCallback(() => ({ logic, conditions }), [logic, conditions])
+  const currentQuery = useCallback(() => rootQuery, [rootQuery])
 
-  // Effect to call onQueryChange whenever conditions or logic change
+  // Effect to call onQueryChange whenever the query changes
   useEffect(() => {
     onQueryChange(currentQuery())
   }, [currentQuery, onQueryChange])
 
-  // Function to add a new condition
-  const addCondition = () => {
+  // Function to find a group by ID in the query tree
+  const findGroupById = (query: QueryGroup, targetId: string): QueryGroup | null => {
+    if (query.id === targetId) return query
+
+    for (const child of query.children) {
+      if (child.type === "group") {
+        const found = findGroupById(child, targetId)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  // Function to update the query tree
+  const updateQuery = (updater: (query: QueryGroup) => QueryGroup) => {
+    setRootQuery(updater(rootQuery))
+  }
+
+  // Function to add a new condition to a group
+  const addCondition = (groupId: string) => {
     const newCondition: QueryCondition = {
-      id: Date.now().toString(), // Simple ID generation
+      id: Date.now().toString(),
       field: fields[0]?.name || "",
       operator: "equals",
       value: "",
     }
-    setConditions([...conditions, newCondition])
+
+    updateQuery((query) => {
+      const group = findGroupById(query, groupId)
+      if (group) {
+        group.children.push(newCondition)
+      }
+      return { ...query }
+    })
   }
 
-  // Function to remove a condition
-  const removeCondition = (id: string) => {
-    setConditions(conditions.filter((condition) => condition.id !== id))
+  // Function to add a new group
+  const addGroup = (parentGroupId: string) => {
+    const newGroup: QueryGroup = {
+      id: Date.now().toString(),
+      type: "group",
+      logic: "AND",
+      children: [],
+    }
+
+    updateQuery((query) => {
+      const parentGroup = findGroupById(query, parentGroupId)
+      if (parentGroup) {
+        parentGroup.children.push(newGroup)
+      }
+      return { ...query }
+    })
   }
 
-  // Function to update a specific condition
-  const updateCondition = (id: string, updates: Partial<QueryCondition>) => {
-    setConditions(conditions.map((condition) => (condition.id === id ? { ...condition, ...updates } : condition)))
+  // Function to remove an item (condition or group)
+  const removeItem = (parentGroupId: string, itemId: string) => {
+    updateQuery((query) => {
+      const parentGroup = findGroupById(query, parentGroupId)
+      if (parentGroup) {
+        parentGroup.children = parentGroup.children.filter((child) => child.id !== itemId)
+      }
+      return { ...query }
+    })
+  }
+
+  // Function to update a condition
+  const updateCondition = (groupId: string, conditionId: string, updates: Partial<QueryCondition>) => {
+    updateQuery((query) => {
+      const group = findGroupById(query, groupId)
+      if (group) {
+        const condition = group.children.find(
+          (child) => child.id === conditionId && !("type" in child),
+        ) as QueryCondition
+        if (condition) {
+          Object.assign(condition, updates)
+        }
+      }
+      return { ...query }
+    })
+  }
+
+  // Function to update group logic
+  const updateGroupLogic = (groupId: string, logic: "AND" | "OR") => {
+    updateQuery((query) => {
+      const group = findGroupById(query, groupId)
+      if (group) {
+        group.logic = logic
+      }
+      return { ...query }
+    })
   }
 
   // Function to get field object by name
@@ -116,7 +192,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
   }
 
   // Function to render value input based on field type
-  const renderValueInput = (condition: QueryCondition) => {
+  const renderValueInput = (condition: QueryCondition, groupId: string) => {
     const field = getFieldByName(condition.field)
     if (!field) return null
 
@@ -126,7 +202,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
           <Input
             type="text"
             value={condition.value}
-            onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
+            onChange={(e) => updateCondition(groupId, condition.id, { value: e.target.value })}
             placeholder="Enter value"
           />
         )
@@ -135,7 +211,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
           <Input
             type="number"
             value={condition.value}
-            onChange={(e) => updateCondition(condition.id, { value: Number(e.target.value) })}
+            onChange={(e) => updateCondition(groupId, condition.id, { value: Number(e.target.value) })}
             placeholder="Enter number"
           />
         )
@@ -144,14 +220,14 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
           <Input
             type="date"
             value={condition.value}
-            onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
+            onChange={(e) => updateCondition(groupId, condition.id, { value: e.target.value })}
           />
         )
       case "select":
         return (
           <Select
             value={condition.value.toString()}
-            onValueChange={(value) => updateCondition(condition.id, { value })}
+            onValueChange={(value) => updateCondition(groupId, condition.id, { value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select value" />
@@ -170,134 +246,190 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
     }
   }
 
-  return (
-    <Card className="w-full max-w-4xl">
-      <CardHeader>
-        <CardTitle>Query Builder</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Logic Selector */}
-        <div className="bg-muted p-4 rounded-lg">
-          <Label className="mb-2 block">Match conditions when:</Label>
-          <RadioGroup
-            value={logic}
-            onValueChange={(value) => setLogic(value as "AND" | "OR")}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="AND" id="and" />
-              <Label htmlFor="and" className="font-medium">
-                ALL conditions are met (AND)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="OR" id="or" />
-              <Label htmlFor="or" className="font-medium">
-                ANY condition is met (OR)
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
+  // Function to render a condition
+  const renderCondition = (condition: QueryCondition, groupId: string, index: number, groupLogic: "AND" | "OR") => {
+    const field = getFieldByName(condition.field)
+    const operators = field ? getOperatorsForType(field.type) : []
 
-        {/* Render each condition */}
-        {conditions.map((condition, index) => {
-          const field = getFieldByName(condition.field)
-          const operators = field ? getOperatorsForType(field.type) : []
-
-          return (
-            <div key={condition.id} className="space-y-4">
-              {/* Logic connector between conditions */}
-              {index > 0 && (
-                <div className="flex items-center justify-center">
-                  <div className="bg-muted px-4 py-1 rounded-full text-sm font-medium">{logic}</div>
-                </div>
-              )}
-
-              <div className="flex items-end gap-4 p-4 border rounded-lg">
-                {/* Field Selection */}
-                <div className="flex-1">
-                  <Label htmlFor={`field-${condition.id}`}>Field</Label>
-                  <Select
-                    value={condition.field}
-                    onValueChange={(value) => {
-                      // Reset operator and value when field changes
-                      const newField = getFieldByName(value)
-                      const defaultOperator = newField ? getOperatorsForType(newField.type)[0].value : "equals"
-                      updateCondition(condition.id, {
-                        field: value,
-                        operator: defaultOperator,
-                        value: "",
-                      })
-                    }}
-                  >
-                    <SelectTrigger id={`field-${condition.id}`}>
-                      <SelectValue placeholder="Select field" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fields.map((field) => (
-                        <SelectItem key={field.name} value={field.name}>
-                          {field.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Operator Selection */}
-                <div className="flex-1">
-                  <Label htmlFor={`operator-${condition.id}`}>Operator</Label>
-                  <Select
-                    value={condition.operator}
-                    onValueChange={(value) => updateCondition(condition.id, { operator: value })}
-                  >
-                    <SelectTrigger id={`operator-${condition.id}`}>
-                      <SelectValue placeholder="Select operator" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {operators.map((operator) => (
-                        <SelectItem key={operator.value} value={operator.value}>
-                          {operator.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Value Input */}
-                <div className="flex-1">
-                  <Label htmlFor={`value-${condition.id}`}>Value</Label>
-                  {renderValueInput(condition)}
-                </div>
-
-                {/* Remove Button */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => removeCondition(condition.id)}
-                  className="text-red-500 hover:text-red-700"
-                  disabled={conditions.length <= 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )
-        })}
-
-        {/* Add Condition Button */}
-        <Button onClick={addCondition} variant="outline" className="w-full">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Condition
-        </Button>
-
-        {/* Query Preview */}
-        {conditions.length > 0 && (
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <Label className="text-sm font-medium">Current Query (JSON):</Label>
-            <pre className="mt-2 text-sm overflow-x-auto">{JSON.stringify({ logic, conditions }, null, 2)}</pre>
+    return (
+      <div key={condition.id} className="space-y-2">
+        {/* Logic connector between conditions */}
+        {index > 0 && (
+          <div className="flex items-center justify-center">
+            <div className="bg-muted px-3 py-1 rounded-full text-xs font-medium">{groupLogic}</div>
           </div>
         )}
+
+        <div className="flex items-end gap-3 p-3 border rounded-lg bg-background">
+          {/* Field Selection */}
+          <div className="flex-1">
+            <Label htmlFor={`field-${condition.id}`} className="text-xs">
+              Field
+            </Label>
+            <Select
+              value={condition.field}
+              onValueChange={(value) => {
+                const newField = getFieldByName(value)
+                const defaultOperator = newField ? getOperatorsForType(newField.type)[0].value : "equals"
+                updateCondition(groupId, condition.id, {
+                  field: value,
+                  operator: defaultOperator,
+                  value: "",
+                })
+              }}
+            >
+              <SelectTrigger id={`field-${condition.id}`} className="h-8">
+                <SelectValue placeholder="Select field" />
+              </SelectTrigger>
+              <SelectContent>
+                {fields.map((field) => (
+                  <SelectItem key={field.name} value={field.name}>
+                    {field.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Operator Selection */}
+          <div className="flex-1">
+            <Label htmlFor={`operator-${condition.id}`} className="text-xs">
+              Operator
+            </Label>
+            <Select
+              value={condition.operator}
+              onValueChange={(value) => updateCondition(groupId, condition.id, { operator: value })}
+            >
+              <SelectTrigger id={`operator-${condition.id}`} className="h-8">
+                <SelectValue placeholder="Select operator" />
+              </SelectTrigger>
+              <SelectContent>
+                {operators.map((operator) => (
+                  <SelectItem key={operator.value} value={operator.value}>
+                    {operator.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Value Input */}
+          <div className="flex-1">
+            <Label htmlFor={`value-${condition.id}`} className="text-xs">
+              Value
+            </Label>
+            <div className="h-8">{renderValueInput(condition, groupId)}</div>
+          </div>
+
+          {/* Remove Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => removeItem(groupId, condition.id)}
+            className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Function to render a group
+  const renderGroup = (group: QueryGroup, parentGroupId?: string, index?: number, parentLogic?: "AND" | "OR") => {
+    const isRoot = group.id === "root"
+
+    return (
+      <div key={group.id} className="space-y-3">
+        {/* Logic connector between groups */}
+        {!isRoot && index !== undefined && index > 0 && parentLogic && (
+          <div className="flex items-center justify-center">
+            <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
+              {parentLogic}
+            </div>
+          </div>
+        )}
+
+        <div className={`border rounded-lg p-4 space-y-4 ${isRoot ? "border-2 border-r-accent" : "border-dashed"}`}>
+          {/* Group Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Label className="text-sm font-medium">{isRoot ? "Main Query" : "Group"} - Match when:</Label>
+              <RadioGroup
+                value={group.logic}
+                onValueChange={(value) => updateGroupLogic(group.id, value as "AND" | "OR")}
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="AND" id={`and-${group.id}`} />
+                  <Label htmlFor={`and-${group.id}`} className="text-sm">
+                    ALL (AND)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="OR" id={`or-${group.id}`} />
+                  <Label htmlFor={`or-${group.id}`} className="text-sm">
+                    ANY (OR)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Remove Group Button (only for non-root groups) */}
+            {!isRoot && parentGroupId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => removeItem(parentGroupId, group.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Group Content */}
+          <div className="space-y-3">
+            {group.children.map((child, childIndex) => {
+              if ("type" in child && child.type === "group") {
+                return renderGroup(child, group.id, childIndex, group.logic)
+              } else {
+                return renderCondition(child as QueryCondition, group.id, childIndex, group.logic)
+              }
+            })}
+          </div>
+
+          {/* Add Buttons */}
+          <div className="flex gap-2 pt-2">
+            <Button onClick={() => addCondition(group.id)} variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Condition
+            </Button>
+            <Button onClick={() => addGroup(group.id)} variant="outline" size="sm">
+              <FolderPlus className="h-4 w-4 mr-2" />
+              Add Group
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Card className="w-full max-w-6xl">
+
+      <CardContent className="">
+        {renderGroup(rootQuery)}
+
+        {/* Query Preview */}
+        <div className="mt-6 p-4 bg-muted rounded-lg">
+          <Label className="text-sm font-medium">Current Query (JSON):</Label>
+          <pre className="mt-2 text-xs overflow-x-auto max-h-96 overflow-y-auto">
+            {JSON.stringify(rootQuery, null, 2)}
+          </pre>
+        </div>
       </CardContent>
     </Card>
   )
 }
+
