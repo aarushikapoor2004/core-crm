@@ -1,63 +1,52 @@
-"use client"
+"use client";
+import { AddDataButton } from "@/components/add-segment-button";
+import { GitGraph } from "lucide-react"
 
-import { useState, useCallback } from "react"
-import QueryBuilder from "@/components/query-builder"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { DialogTrigger } from "@radix-ui/react-dialog";
+import { Button } from "@/components/ui/button";
 
-const exampleFields = [
-  {
-    name: "name",
-    label: "Full Name",
-    type: "text" as const,
-  },
-  {
-    name: "age",
-    label: "Age",
-    type: "number" as const,
-  },
-  {
-    name: "email",
-    label: "Email Address",
-    type: "text" as const,
-  },
-  {
-    name: "registration_date",
-    label: "Registration Date",
-    type: "date" as const,
-  },
-  {
-    name: "status",
-    label: "Account Status",
-    type: "select" as const,
-    options: ["Active", "Inactive", "Pending", "Suspended"],
-  },
-  {
-    name: "department",
-    label: "Department",
-    type: "select" as const,
-    options: ["Engineering", "Marketing", "Sales", "HR", "Finance"],
-  },
-]
-
-const defaultQuery = {
-  id: "root",
-  type: "group" as const,
-  logic: "OR" as const,
-  children: [
-  ],
-}
-
-export default function Home() {
-  const [currentQuery, setCurrentQuery] = useState<any>(defaultQuery)
-
-  const handleQueryChange = useCallback((query: any) => {
-    setCurrentQuery(query)
-    console.log("Query changed:", query)
-  }, [])
+export default function MainHomePage() {
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <QueryBuilder fields={exampleFields} defaultQuery={defaultQuery} onQueryChange={handleQueryChange} />
-    </div >
+    <div className="space-y-3">
+      <div className="w-full">
+        <div className="flex justify-between pt-2">
+          <div>
+            <h2 className="text-2xl font-bold">overview</h2>
+          </div>
+          <div className="flex gap-2 ">
+            <AddDataButton />
+          </div>
+        </div>
+      </div>
+
+      <Card className="@container/card w-xs">
+        <CardHeader className="relative">
+          <CardDescription className="flex gap-1 items-center"> <GitGraph className="size-4" /> current segment</CardDescription>
+          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+            segment name
+          </CardTitle>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="text-xs p-2 mt-2 w-ful">
+                show rules
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              ere
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+      </Card>
+
+    </div>
   )
 }
-

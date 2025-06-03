@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -99,7 +99,8 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
     if (query.id === targetId) return query
 
     for (const child of query.children) {
-      if (child.type === "group") {
+      // Check if child is a group by checking if it has the 'type' property
+      if ('type' in child && child.type === "group") {
         const found = findGroupById(child, targetId)
         if (found) return found
       }
@@ -165,7 +166,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
       const group = findGroupById(query, groupId)
       if (group) {
         const condition = group.children.find(
-          (child) => child.id === conditionId && !("type" in child),
+          (child) => child.id === conditionId && !('type' in child),
         ) as QueryCondition
         if (condition) {
           Object.assign(condition, updates)
@@ -260,10 +261,10 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
           </div>
         )}
 
-        <div className="flex items-end gap-3 p-3 border rounded-lg bg-background">
+        <div className="flex items-end gap-3 p-3 border rounded-lg bg-accent/50">
           {/* Field Selection */}
           <div className="flex-1">
-            <Label htmlFor={`field-${condition.id}`} className="text-xs">
+            <Label htmlFor={`field-${condition.id}`} className="text-xs mb-1">
               Field
             </Label>
             <Select
@@ -293,7 +294,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
 
           {/* Operator Selection */}
           <div className="flex-1">
-            <Label htmlFor={`operator-${condition.id}`} className="text-xs">
+            <Label htmlFor={`operator-${condition.id}`} className="text-xs mb-1">
               Operator
             </Label>
             <Select
@@ -315,7 +316,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
 
           {/* Value Input */}
           <div className="flex-1">
-            <Label htmlFor={`value-${condition.id}`} className="text-xs">
+            <Label htmlFor={`value-${condition.id}`} className="text-xs mb-1">
               Value
             </Label>
             <div className="h-8">{renderValueInput(condition, groupId)}</div>
@@ -323,6 +324,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
 
           {/* Remove Button */}
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={() => removeItem(groupId, condition.id)}
@@ -378,6 +380,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
             {/* Remove Group Button (only for non-root groups) */}
             {!isRoot && parentGroupId && (
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => removeItem(parentGroupId, group.id)}
@@ -391,7 +394,7 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
           {/* Group Content */}
           <div className="space-y-3">
             {group.children.map((child, childIndex) => {
-              if ("type" in child && child.type === "group") {
+              if ('type' in child && child.type === "group") {
                 return renderGroup(child, group.id, childIndex, group.logic)
               } else {
                 return renderCondition(child as QueryCondition, group.id, childIndex, group.logic)
@@ -401,11 +404,21 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
 
           {/* Add Buttons */}
           <div className="flex gap-2 pt-2">
-            <Button onClick={() => addCondition(group.id)} variant="outline" size="sm">
+            <Button
+              type="button"
+              onClick={() => addCondition(group.id)}
+              variant="outline"
+              size="sm"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Condition
             </Button>
-            <Button onClick={() => addGroup(group.id)} variant="outline" size="sm">
+            <Button
+              type="button"
+              onClick={() => addGroup(group.id)}
+              variant="outline"
+              size="sm"
+            >
               <FolderPlus className="h-4 w-4 mr-2" />
               Add Group
             </Button>
@@ -417,7 +430,6 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
 
   return (
     <Card className="w-full max-w-6xl">
-
       <CardContent className="">
         {renderGroup(rootQuery)}
 
@@ -432,4 +444,3 @@ export default function QueryBuilder({ fields, defaultQuery, onQueryChange }: Qu
     </Card>
   )
 }
-
