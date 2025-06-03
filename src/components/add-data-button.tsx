@@ -7,7 +7,7 @@ import { ChevronsRight, PlusCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger, } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomerForm } from "./add-customer-form";
-import { OrdersForm } from "./add-orders-form";
+import { OrderForm as OrdersForm } from "./add-orders-form";
 import {
   Tabs,
   TabsContent,
