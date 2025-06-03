@@ -126,14 +126,6 @@ export function LoginForm({ asModal }: { asModal?: boolean }) {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent className="w-48">
-              <Link href={"/profile"} passHref>
-                <DropdownMenuItem asChild>
-                  <div className="flex items-center space-x-2 cursor-pointer">
-                    <User className=" mr-2  h-[1.2rem] w-[1.2rem] " />
-                    <span>{"profile"}</span>
-                  </div>
-                </DropdownMenuItem>
-              </Link>
               <DropdownMenuItem
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
                 className="cursor-pointer "
