@@ -1,10 +1,15 @@
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CardContent, Card, CardHeader, CardDescription } from "./ui/card";
+import {
+  CardContent,
+  Card,
+  CardHeader,
+  CardDescription,
+} from "./ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useSession } from "next-auth/react";
 import { CirclePlus, Loader2 } from "lucide-react";
 import {
@@ -17,13 +22,15 @@ import {
 import { z } from "zod";
 import { segmentSchema, defaultValues } from "@/schema/segment";
 import QueryBuilder from "./query-builder";
+import { createSegment } from "@/actions/add-segment-action"; // 👈 adjust the import path as needed
+import { toast } from "sonner"; // 👈 optional toast for notifications
 
 const defaultQuery = {
   id: "root",
   type: "group" as const,
   logic: "OR" as const,
-  children: []
-}
+  children: [],
+};
 
 const exampleFields = [
   {
@@ -32,34 +39,31 @@ const exampleFields = [
     type: "text" as const,
   },
   {
-    name: "age",
-    label: "Age",
-    type: "number" as const,
-  },
-  {
     name: "email",
     label: "Email Address",
     type: "text" as const,
   },
   {
-    name: "registration_date",
-    label: "Registration Date",
-    type: "date" as const,
+    name: "phoneNumber",
+    label: "Phone Number",
+    type: "text" as const,
   },
   {
-    name: "status",
-    label: "Account Status",
-    type: "select" as const,
-    options: ["Active", "Inactive", "Pending", "Suspended"],
+    name: "age",
+    label: "Age",
+    type: "number" as const,
   },
   {
-    name: "department",
-    label: "Department",
-    type: "select" as const,
-    options: ["Engineering", "Marketing", "Sales", "HR", "Finance"],
+    name: "userId",
+    label: "User ID",
+    type: "text" as const,
   },
-]
-
+  {
+    name: "total-spend",
+    label: "Toal Spend",
+    type: "number" as const
+  }
+];
 
 export function SegmentForm() {
   const { data: session, status } = useSession();
@@ -72,37 +76,53 @@ export function SegmentForm() {
   const [isPending, startTransition] = useTransition();
 
   const onSubmit = (values: z.infer<typeof segmentSchema>) => {
-    alert(" i am form this form ")
-    alert(JSON.stringify(values));
-  };
+    startTransition(async () => {
+      const response = await createSegment(values);
 
+      if (response.success) {
+        toast.success(response.message); // optional UI feedback
+        form.reset(defaultValues);
+      } else {
+        toast.error(response.message);
+      }
+    });
+  };
 
   if (status === "loading") {
     return <div>Loading...</div>;
   }
 
-  if (session == null) return <> go back and login first </>
-  form.setValue("userId", session.user.id);
-
   if (!session) {
     return (
       <div className="mx-auto max-w-3xl py-4">
         <div className="text-center p-8 rounded-lg border border-red-200 bg-red-50">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Authentication Required</h2>
-          <p className="text-red-600">Please log in to access the customer form.</p>
+          <h2 className="text-xl font-semibold text-red-800 mb-2">
+            Authentication Required
+          </h2>
+          <p className="text-red-600">
+            Please log in to access the customer form.
+          </p>
         </div>
       </div>
     );
   }
+
+  useEffect(() => { form.setValue("userId", session.user.id) }, [])
+
   return (
-    <div className="">
-      <Card className=" max-w-4xl  border-none shadow-none mx-auto  dark:bg-accent/15">
+    <div>
+      <Card className="max-w-4xl border-none shadow-none mx-auto dark:bg-accent/15">
         <CardHeader>
-          <CardDescription>Fill out the details to add a new Segment.</CardDescription>
+          <CardDescription>
+            Fill out the details to add a new Segment.
+          </CardDescription>
         </CardHeader>
         <CardContent className="-mt-2">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full" >
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 w-full"
+            >
               <div className="flex gap-4">
                 <FormField
                   control={form.control}
@@ -110,7 +130,7 @@ export function SegmentForm() {
                   render={({ field }) => (
                     <FormItem className="w-full">
                       <FormLabel>Segment name</FormLabel>
-                      <Input {...field} placeholder="lab Name" />
+                      <Input {...field} placeholder="Lab Name" />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -120,8 +140,8 @@ export function SegmentForm() {
                   name="userId"
                   render={({ field }) => (
                     <FormItem className="w-full">
-                      <FormLabel>Room No</FormLabel>
-                      <Input disabled {...field} placeholder="" />
+                      <FormLabel>User ID</FormLabel>
+                      <Input disabled {...field} />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -138,7 +158,7 @@ export function SegmentForm() {
                   <Loader2 className="animate-spin" />
                 ) : (
                   <div className="flex gap-2 items-center">
-                    Add Class
+                    Add Segment
                     <CirclePlus />
                   </div>
                 )}
@@ -148,6 +168,5 @@ export function SegmentForm() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
