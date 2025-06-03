@@ -57,7 +57,7 @@ export function CustomerForm() {
         };
 
         const res = await axios.post<ApiResponse>(
-          "http://localhost:3000/api/customers",
+          "http://core-crm-22bcs14907.vercel.app/api/customers",
           payload
         );
 
