@@ -5,6 +5,7 @@ import { generateId } from "@/utils/generate-id";
 import { PROTECTED_ROUTES } from "@/constants";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
