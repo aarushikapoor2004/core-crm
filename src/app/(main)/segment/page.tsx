@@ -1,6 +1,6 @@
 "use client";
 import { AddDataButton } from "@/components/add-segment-button";
-import { GitGraph, ChevronDown, Loader2 } from "lucide-react";
+import { GitGraph, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -23,7 +23,6 @@ import { useState, useEffect } from "react";
 import { getAllSegmentsById } from "@/actions/get-segments";
 import { getAllData } from "@/actions/filter-query";
 import { OverviewTable } from "@/components/overview-table";
-import { segmentSchema } from "@/schema/segment";
 
 // Types
 type SegmentType = {

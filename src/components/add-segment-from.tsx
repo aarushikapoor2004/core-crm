@@ -22,8 +22,8 @@ import {
 import { z } from "zod";
 import { segmentSchema, defaultValues } from "@/schema/segment";
 import QueryBuilder from "./query-builder";
-import { createSegment } from "@/actions/add-segment-action"; // 👈 adjust the import path as needed
-import { toast } from "sonner"; // 👈 optional toast for notifications
+import { createSegment } from "@/actions/add-segment-action";
+import { toast } from "sonner";
 
 const defaultQuery = {
   id: "root",

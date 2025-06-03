@@ -18,7 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSearchParams } from "next/navigation";
-import { LogOut, User, ExternalLink, Sun, Moon, Waypoints } from "lucide-react";
+import { LogOut, ExternalLink, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
