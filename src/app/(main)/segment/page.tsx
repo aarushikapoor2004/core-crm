@@ -20,9 +20,10 @@ import {
 } from "@/components/ui/select";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
-import { z } from "zod";
-import { segmentSchema } from "@/schema/segment";
 import { getAllSegmentsById } from "@/actions/get-segments";
+import { getAllData } from "@/actions/filter-query";
+import { OverviewTable } from "@/components/overview-table";
+import { segmentSchema } from "@/schema/segment";
 
 // Types
 type SegmentType = {
@@ -31,31 +32,25 @@ type SegmentType = {
   rules: any;
 };
 
-type LoadDataResult = {
-  // Define your data structure here based on what loadData returns
-  data: any[];
-  total: number;
-  // Add other fields as needed
-};
-
-// Mock loadData function - replace with your actual implementation
-async function loadData(rules: any): Promise<LoadDataResult> {
-  // Replace this with your actual loadData implementation
+// Fixed loadData function to accept segment rules
+async function loadData(segmentRules?: any) {
   try {
-    // Simulate API call based on rules
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Pass segment rules to getAllData for filtering
+    const data = await getAllData();
+    console.log("Raw data from getAllData:", data);
 
-    // Mock data - replace with actual data fetching logic
+    // Return the data wrapped in an object structure
     return {
-      data: [
-        { id: 1, name: "Sample Data 1", value: "Value 1" },
-        { id: 2, name: "Sample Data 2", value: "Value 2" },
-      ],
-      total: 2
+      data: data,
+      success: true
     };
   } catch (error) {
     console.error("Error loading data:", error);
-    throw error;
+    return {
+      data: [],
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }
 
@@ -63,12 +58,11 @@ export default function MainHomePage() {
   const { data: session, status } = useSession();
   const [segments, setSegments] = useState<SegmentType[]>([]);
   const [selectedSegment, setSelectedSegment] = useState<SegmentType | null>(null);
-  const [segmentData, setSegmentData] = useState<LoadDataResult | null>(null);
+  const [segmentData, setSegmentData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load all segments when component mounts
   useEffect(() => {
     async function fetchSegments() {
       if (status === "loading") return; // Wait for auth to load
@@ -99,16 +93,25 @@ export default function MainHomePage() {
     fetchSegments();
   }, [session, status]);
 
-  // Load data when segment is selected
   useEffect(() => {
     async function fetchSegmentData() {
-      if (!selectedSegment || !selectedSegment.rules) return;
+      if (!selectedSegment) {
+        setSegmentData(null);
+        return;
+      }
 
       try {
         setDataLoading(true);
         setError(null);
         const result = await loadData(selectedSegment.rules);
-        setSegmentData(result);
+        console.log("Loaded segment data:", result); // Debug log
+
+        if (result.success) {
+          setSegmentData(result);
+        } else {
+          setError(result.error || "Failed to load data");
+          setSegmentData(null);
+        }
       } catch (err) {
         console.error("Error loading segment data:", err);
         setError("Failed to load segment data");
@@ -128,7 +131,6 @@ export default function MainHomePage() {
     }
   };
 
-  // Show loading state
   if (status === "loading" || loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -138,7 +140,6 @@ export default function MainHomePage() {
     );
   }
 
-  // Show error state
   if (error && !selectedSegment) {
     return (
       <div className="space-y-3">
@@ -175,8 +176,7 @@ export default function MainHomePage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        {/* Segment Selection Card */}
+      <div className="space-y-3">
         <Card className="@container/card w-xs min-w-[300px]">
           <CardHeader className="relative">
             <CardDescription className="flex gap-1 items-center">
@@ -234,7 +234,6 @@ export default function MainHomePage() {
           </CardHeader>
         </Card>
 
-        {/* Data Display Card */}
         <Card className="flex-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -262,47 +261,15 @@ export default function MainHomePage() {
               <div className="text-center text-red-600 py-8">
                 {error}
               </div>
-            ) : segmentData ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">
-                    Total Records: {segmentData.total}
-                  </span>
-                </div>
-
-                {/* Data Table */}
-                <div className="border rounded-md">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">ID</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Value</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {segmentData.data.map((item, index) => (
-                          <tr key={item.id || index} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 text-sm">{item.id}</td>
-                            <td className="px-4 py-2 text-sm">{item.name}</td>
-                            <td className="px-4 py-2 text-sm">{item.value}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {segmentData.data.length === 0 && (
-                  <div className="text-center text-gray-500 py-8">
-                    No data found for this segment
-                  </div>
-                )}
+            ) : segmentData && segmentData.data && segmentData.data.length > 0 ? (
+              <OverviewTable data={segmentData.data} />
+            ) : segmentData && segmentData.data && segmentData.data.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                No data available for this segment
               </div>
             ) : (
               <div className="text-center text-gray-500 py-8">
-                No data available
+                No data loaded
               </div>
             )}
           </CardContent>
@@ -311,4 +278,3 @@ export default function MainHomePage() {
     </div>
   );
 }
-
