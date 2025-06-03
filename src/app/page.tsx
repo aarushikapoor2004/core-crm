@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { GalleryVerticalEnd, Check, ArrowRight, Database, Filter, Users, BarChart3, Mail } from "lucide-react"
+import { Suspense } from "react";
+import { GalleryVerticalEnd, ArrowRight, Mail } from "lucide-react"
 import Link from "next/link"
 import { LoginForm } from "@/components/login-form"
 
@@ -22,7 +22,9 @@ export default function LandingPage() {
               <Link href='/overview'>
                 <Button className="bg-gradient-to-bl from-blue-400 via-blue-800 to-blue-600">Dashboard <ArrowRight /> </Button>
               </Link>
-              <LoginForm asModal />
+              <Suspense fallback={null}>
+                <LoginForm asModal />
+              </Suspense>
             </div>
           </div>
         </div>
