@@ -31,7 +31,7 @@ export default function ChatWidget({ description }: ChatWidgetProps) {
 
   const suggestions = [
     "tell me the summery of the data",
-    "tell me the avg order value"
+    "tell me the total number order "
   ];
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function ChatWidget({ description }: ChatWidgetProps) {
       </TooltipProvider>
 
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)]">
+        <div className="fixed bottom-20 right-4 z-50 w-[680px] max-w-[calc(100vw-2rem)]">
           <Card className="relative">
             <Button
               variant="ghost"
@@ -134,7 +134,6 @@ export default function ChatWidget({ description }: ChatWidgetProps) {
                   </Button>
                 )}
               </div>
-              <h2 className="text-xs font-semibold">How can I help you today?</h2>
             </CardHeader>
 
             <CardContent>
@@ -200,8 +199,9 @@ export default function ChatWidget({ description }: ChatWidgetProps) {
               </form>
             </CardContent>
           </Card>
-        </div>
-      )}
+        </div >
+      )
+      }
     </>
   );
 }
