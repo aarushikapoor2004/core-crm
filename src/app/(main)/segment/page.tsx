@@ -215,7 +215,7 @@ export default function MainHomePage() {
                       <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
                         <div className="space-y-2">
                           <h3 className="text-lg font-semibold">Segment Rules</h3>
-                          <pre className="bg-gray-100 p-4 rounded-md text-sm overflow-auto">
+                          <pre className="bg-gray-100 dark:bg-accent p-4 rounded-md text-sm overflow-auto">
                             {JSON.stringify(selectedSegment.rules, null, 2)}
                           </pre>
                         </div>

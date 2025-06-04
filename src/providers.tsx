@@ -16,7 +16,7 @@ export const Providers = ({ children }: { children: ReactNode }) => {
           disableTransitionOnChange
         >
           {children}
-          <Toaster position="top-right" />
+          <Toaster position="bottom-right" />
         </ThemeProvider>
       </SessionProvider >
     </>

@@ -130,7 +130,7 @@ export function SegmentForm() {
                   render={({ field }) => (
                     <FormItem className="w-full">
                       <FormLabel>Segment name</FormLabel>
-                      <Input {...field} placeholder="Lab Name" />
+                      <Input {...field} placeholder="segment-name" />
                       <FormMessage />
                     </FormItem>
                   )}
