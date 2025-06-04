@@ -35,26 +35,31 @@ export function OrderForm() {
 
   const onSubmit = (values: z.infer<typeof orderFormSchema>) => {
     startTransition(async () => {
-      // Check if session is loading
       if (status === "loading") {
         toast.error("Please wait, checking authentication...")
         return
       }
-
-      // Check if user is authenticated
       if (!session?.user?.id) {
         toast.error("Unauthenticated request. Please log in to continue.")
         return
       }
 
       try {
-        // Add userId to the request payload
         const payload = {
           ...values,
           userId: session.user.id,
         }
 
-        const res = await axios.post<ApiResponse>("/api/orders", payload)
+
+        const baseUrl =
+          process.env.NODE_ENV === "production"
+            ? "https://core-crm-22bcs14907.vercel.app"
+            : "http://localhost:3000";
+
+        const res = await axios.post<ApiResponse>(
+          `${baseUrl}/api/orders`,
+          payload
+        );
 
         const result = res.data
         if (result.success) {

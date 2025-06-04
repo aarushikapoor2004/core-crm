@@ -4,7 +4,7 @@ import { z } from "zod";
 export const orderSchema = z.object({
   status: z.enum(["confirmed", "pending", "refunded"], { errorMap: () => ({ message: "Class grade is required and must be a valid grade (e.g., 1 to 12, Play, or Nursery).", }) }),
   amount: z.number().min(0, "Amount must be non-negative"),
-  orderDate: z.date(),
+  orderDate: z.coerce.date(),
   customerId: z.string(),
 });
 

@@ -1,3 +1,4 @@
+'use server'
 import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { orderFormSchema, orderSchema } from "@/schema/order"
@@ -13,101 +14,104 @@ function getStatus(status: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.clear()
-    const body = await request.json()
-    console.log("Received request body:", body)
+    console.clear();
+    console.log("🔵 [START] POST /api/orders");
 
-    const { userId, entries } = body
+    // Step 1: Parse JSON Body
+    const body = await request.json();
+    console.log("📥 Request Body:", body);
 
+    const { userId, entries } = body;
+
+    // Step 2: Check Auth
     if (!userId) {
-      console.error("Authentication error: No userId provided in request")
+      console.error("❌ No userId provided. Authentication failed.");
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           message: "Unauthorized: User not authenticated",
         },
-        { status: 401 },
-      )
+        { status: 401 }
+      );
     }
 
-    console.log("Processing request for userId:", userId)
+    console.log("✅ Authenticated User ID:", userId);
 
-    // Validate the form data structure
-    const validationResult = orderFormSchema.safeParse({ entries })
+    // Step 3: Validate Full Form Data
+    const validationResult = orderFormSchema.safeParse({ entries });
     if (!validationResult.success) {
-      console.error("Validation error:", validationResult.error.errors)
+      console.error("❌ Order Form Schema Validation Failed:");
+      console.table(validationResult.error.errors);
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           message: "Validation failed: Invalid order data format",
         },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
-    console.log(`Starting to process ${entries.length} order entries`)
+    console.log(`📝 ${entries.length} Order Entries to Process`);
 
-    let uploadedCount = 0
-    let failedCount = 0
-    const failedEntries: Array<{ index: number; error: string }> = []
+    // Step 4: Process Entries
+    let uploadedCount = 0;
+    let failedCount = 0;
+    const failedEntries: Array<{ index: number; error: string }> = [];
 
     for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i]
+      const entry = entries[i];
+      console.log(`🔄 Processing Entry ${i + 1}:`, entry);
+
       try {
-        console.log(`Processing entry ${i + 1}:`, entry)
+        // 4a. Validate individual entry
+        const validEntry = orderSchema.parse(entry);
+        console.log(`✅ Entry ${i + 1} Passed Schema Validation`);
 
-        // Validate individual entry
-        const validEntry = orderSchema.parse(entry)
-        console.log(`Entry ${i + 1} validation passed`)
-
-        // Verify that the customer exists
+        // 4b. Verify customer exists
         const customer = await db.customer.findUnique({
-          where: {
-            id: validEntry.customerId,
-          },
-        })
+          where: { id: validEntry.customerId },
+        });
 
         if (!customer) {
-          throw new Error(`Customer with ID ${validEntry.customerId} not found`)
+          throw new Error(
+            `Customer with ID '${validEntry.customerId}' not found`
+          );
         }
+        console.log(`👤 Customer Found: ${customer.name} (${customer.id})`);
 
-        // Create order in database
+        // 4c. Create the order
         const createdOrder = await db.order.create({
           data: {
             status: getStatus(validEntry.status),
             amount: validEntry.amount,
             customerId: validEntry.customerId,
           },
-        })
+        });
 
-        console.log(`Entry ${i + 1} successfully created with ID:`, createdOrder.id)
-        uploadedCount++
+        console.log(`✅ Order Created (ID: ${createdOrder.id})`);
+        uploadedCount++;
       } catch (error) {
-        console.error(`Failed to process entry ${i + 1}:`, error)
+        console.error(`❌ Failed Entry ${i + 1}:`, error);
 
-        let errorMessage = "Unknown error"
-        if (error instanceof Error) {
-          errorMessage = error.message
-        }
-
+        failedCount++;
         failedEntries.push({
           index: i + 1,
-          error: errorMessage,
-        })
-
-        failedCount++
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }
 
-    // Log summary
-    console.log(`Processing completed: ${uploadedCount} successful, ${failedCount} failed`)
-    if (failedEntries.length > 0) {
-      console.log("Failed entries details:", failedEntries)
+    // Step 5: Summary
+    console.log("📊 Upload Summary:");
+    console.log(`✅ Uploaded: ${uploadedCount}`);
+    console.log(`❌ Failed: ${failedCount}`);
+    if (failedCount > 0) {
+      console.table(failedEntries);
     }
 
-    let message = `Processing completed: ${uploadedCount} orders uploaded successfully.`
+    let message = `Processing completed: ${uploadedCount} orders uploaded successfully.`;
     if (failedCount > 0) {
-      message += ` ${failedCount} entries failed.`
+      message += ` ${failedCount} entries failed.`;
     }
 
     return NextResponse.json<ApiResponse<{ uploaded: number; failed: number }>>(
@@ -119,28 +123,26 @@ export async function POST(request: NextRequest) {
           failed: failedCount,
         },
       },
-      { status: 200 },
-    )
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Order API Error:", error)
+    console.error("🔥 Uncaught Exception in POST /api/orders");
 
-    let errorMessage = "Internal server error occurred while processing orders."
     if (error instanceof Error) {
-      console.error("Error details:", {
+      console.error("🛑 Error Details:", {
         name: error.name,
         message: error.message,
         stack: error.stack,
-      })
-      errorMessage = error.message
+      });
     }
 
     return NextResponse.json<ApiResponse>(
       {
         success: false,
-        message: errorMessage,
+        message: "Internal server error occurred while processing orders.",
       },
-      { status: 500 },
-    )
+      { status: 500 }
+    );
   }
 }
 

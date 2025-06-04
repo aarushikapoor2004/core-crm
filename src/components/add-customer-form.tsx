@@ -37,34 +37,35 @@ export function CustomerForm() {
 
   const onSubmit = (values: z.infer<typeof customerFormSchema>) => {
     startTransition(async () => {
-      // Check if session is loading
       if (status === "loading") {
         toast.error("Please wait, checking authentication...");
         return;
       }
 
-      // Check if user is authenticated
       if (!session?.user?.id) {
         toast.error("Unauthenticated request. Please log in to continue.");
         return;
       }
 
       try {
-        // Add userId to the request payload
         const payload = {
           ...values,
           userId: session.user.id
         };
 
+        const baseUrl =
+          process.env.NODE_ENV === "production"
+            ? "https://core-crm-22bcs14907.vercel.app"
+            : "http://localhost:3000";
         const res = await axios.post<ApiResponse>(
-          "http://core-crm-22bcs14907.vercel.app/api/customers",
+          `${baseUrl}/api/customers`,
           payload
         );
 
         const result = res.data;
         if (result.success) {
           toast.success(result.message);
-          // form.reset();
+          form.reset();
         } else {
           toast.error(result.message);
         }
@@ -75,12 +76,10 @@ export function CustomerForm() {
     });
   };
 
-  // Show loading state while session is being fetched
   if (status === "loading") {
     return <div>Loading...</div>;
   }
 
-  // Show authentication required message if not logged in
   if (!session) {
     return (
       <div className="mx-auto max-w-3xl py-4">
