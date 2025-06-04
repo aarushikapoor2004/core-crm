@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { OverviewTable } from "@/components/overview-table";
 import { auth } from "@/lib/auth";
+import ChatWidget from "@/components/chat-widget";
 
 export default async function MainHomePage() {
   const session = await auth();
@@ -83,7 +84,7 @@ export default async function MainHomePage() {
   const totalCustomers = customerData.length;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
       <div className="w-full">
         <div className="flex justify-between pt-2">
           <div>
@@ -157,6 +158,7 @@ export default async function MainHomePage() {
         </Card>
       </div>
       <OverviewTable data={customerData} />
+      <ChatWidget description={JSON.stringify(customerData)} />
     </div>
   );
 }
